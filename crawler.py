@@ -11,11 +11,13 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 class StockCrawler:
+    debug = True
     def __init__(self, stock_code):
         self.raw_stock_code = stock_code  # Raw stock code without .TW
         # Set up Selenium Chrome driver
         chrome_options = Options()
-        chrome_options.add_argument('--headless')  # Run in headless mode (no GUI)
+        if not self.debug:
+            chrome_options.add_argument('--headless')  # Run in headless mode (no GUI)
         chrome_options.add_argument('--disable-gpu')
         chrome_options.add_argument('user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
         # Specify path to chromedriver if not in PATH
@@ -95,7 +97,7 @@ class StockCrawler:
     
     def get_profit_ratio(self):
         """
-        Fetch net profit margin data for the past 10 years from StockBzPerformance.asp
+        Fetch net profit margin data for the past 5 years from StockBzPerformance.asp
         """
         url = f"https://goodinfo.tw/tw/StockBzPerformance.asp?STOCK_ID={self.raw_stock_code}"
         html = self._fetch_page(url)
@@ -104,31 +106,44 @@ class StockCrawler:
         
         soup = BeautifulSoup(html, 'html.parser')
         profit_data = []
-        profit_table = soup.find('table', {'class': 'solid_1_padding_4_2_tbl'})
+        profit_table = soup.find('table', {'id': 'tblDetail'})
         if profit_table:
-            rows = profit_table.find_all('tr')[2:]  # Skip headers
-            for row in rows:
-                cols = row.find_all('td')
-                if len(cols) >= 11:
-                    year = cols[0].text.strip()
-                    net_profit_margin = cols[10].text.strip().replace('%', '')
-                    if re.match(r'\d{4}', year):
-                        year = int(year)
-                        profit_data.append({
-                            'Year': year,
-                            'Month': 12,
-                            'Net Profit Margin': float(net_profit_margin) if net_profit_margin and net_profit_margin != '-' else None
-                        })
-        else:
-            print(f"Profit table not found for stock {self.raw_stock_code}")
+            # Iterate through rows (row0 to row5)
+            for i in range(6):  # 0 to 5 inclusive
+                row = profit_table.find('tr', {'id': f'row{i}'})
+                if row:
+                    cols = row.find_all('td')
+                    if len(cols) >= 16:  # Ensure there are at least 16 <td> elements
+                        year = cols[0].text.strip()  # First column is year
+                        net_profit_margin = cols[15].text.strip().replace('%', '')  # 16th column (index 15) is net profit margin
+                        if re.match(r'\d{4}', year):
+                            # Skip if net profit margin is empty or invalid
+                            if not net_profit_margin or net_profit_margin == '-' or net_profit_margin == '':
+                                print(f"Skipping row{i} (Year {year}) due to empty or invalid profit margin")
+                                continue
+                            year = int(year)
+                            profit_data.append({
+                                'Year': year,
+                                'Month': 12,  # Annual data, default to December
+                                'Net Profit Margin': float(net_profit_margin)
+                            })
+                        else:
+                            print(f"Invalid year format in row{i}: {year}")
+                else:
+                    print(f"Row {i} not found for stock {self.raw_stock_code}")
+                    break
         
         profit_df = pd.DataFrame(profit_data)
         if profit_df.empty:
-            print(f"No profit data parsed for stock {self.raw_stock_code}")
+            print(f"No valid profit data parsed for stock {self.raw_stock_code}")
             return profit_df
         
-        ten_years_ago = datetime.now().year - 10
-        profit_df = profit_df[profit_df['Year'] >= ten_years_ago]
+        # Ensure we have exactly 5 years of valid data
+        if len(profit_df) > 5:
+            profit_df = profit_df.tail(5)  # Take the latest 5 years
+        elif len(profit_df) < 5:
+            print(f"Warning: Only {len(profit_df)} years of valid profit data found for stock {self.raw_stock_code}")
+        
         return profit_df
     
     def get_pe_ratio(self):
