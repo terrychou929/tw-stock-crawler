@@ -1,6 +1,4 @@
-import pandas as pd
 from bs4 import BeautifulSoup
-import re
 from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -9,9 +7,13 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+import inspect
+import pandas as pd
+import re
 
 class StockCrawler:
     debug = True
+
     def __init__(self, stock_code):
         self.raw_stock_code = stock_code  # Raw stock code without .TW
         # Set up Selenium Chrome driver
@@ -35,7 +37,7 @@ class StockCrawler:
             try:
                 # Option 1: Look for common close button (adjust XPath/ID as needed)
                 close_button_xpath = "//button[@id='ats-interstitial-button']"
-                WebDriverWait(self.driver, 5).until(
+                WebDriverWait(self.driver, 10).until(
                     EC.element_to_be_clickable((By.XPATH, close_button_xpath))
                 )
                 close_button = self.driver.find_element(By.XPATH, close_button_xpath)
@@ -57,11 +59,13 @@ class StockCrawler:
         """
         Fetch the last 36 months of revenue data from ShowSaleMonChart.asp
         """
+        print(f"Start to fetch {inspect.currentframe().f_code.co_name.split('_')[1]} data")
+
         url = f"https://goodinfo.tw/tw/ShowSaleMonChart.asp?STOCK_ID={self.raw_stock_code}"
         html = self._fetch_page(url)
         if not html:
             return pd.DataFrame()
-        
+
         soup = BeautifulSoup(html, 'html.parser')
         revenue_data = []
         revenue_table = soup.find('table', {'id': 'tblDetail'})
@@ -99,11 +103,13 @@ class StockCrawler:
         """
         Fetch net profit margin data for the past 5 years from StockBzPerformance.asp
         """
+        print(f"Start to fetch {inspect.currentframe().f_code.co_name.split('_')[1]} data")
+
         url = f"https://goodinfo.tw/tw/StockBzPerformance.asp?STOCK_ID={self.raw_stock_code}"
         html = self._fetch_page(url)
         if not html:
             return pd.DataFrame()
-        
+
         soup = BeautifulSoup(html, 'html.parser')
         profit_data = []
         profit_table = soup.find('table', {'id': 'tblDetail'})
@@ -150,7 +156,10 @@ class StockCrawler:
         """
         Fetch the last 180 weeks of P/E ratio data from ShowK_ChartFlow.asp
         """
+        print(f"Start to fetch {inspect.currentframe().f_code.co_name.split('_')[1]} data")        
+
         url = f"https://goodinfo.tw/tw/ShowK_ChartFlow.asp?RPT_CAT=PER&STOCK_ID={self.raw_stock_code}"
+        
         try:
             self.driver.get(url)
             
@@ -170,7 +179,7 @@ class StockCrawler:
         except Exception as e:
             print(f"Error loading page or clicking button for {self.raw_stock_code}: {e}")
             return pd.DataFrame()
-        
+
         soup = BeautifulSoup(html, 'html.parser')
         pe_data = []
         pe_table = soup.find('table', {'id': 'tblDetail'})
@@ -207,6 +216,8 @@ class StockCrawler:
         """
         Fetch the latest transaction price from StockDetail.asp using XPath
         """
+        print(f"Start to fetch {inspect.currentframe().f_code.co_name.split('_')[1]} data")
+
         url = f"https://goodinfo.tw/tw/StockDetail.asp?STOCK_ID={self.raw_stock_code}"
         html = self._fetch_page(url)
         if not html:
