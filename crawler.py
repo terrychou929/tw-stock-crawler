@@ -53,7 +53,7 @@ class StockCrawler:
     
     def get_revenue(self):
         """
-        Fetch all monthly revenue data from the default view of ShowSaleMonChart.asp
+        Fetch the last 36 months of revenue data from ShowSaleMonChart.asp
         """
         url = f"https://goodinfo.tw/tw/ShowSaleMonChart.asp?STOCK_ID={self.raw_stock_code}"
         html = self._fetch_page(url)
@@ -62,25 +62,36 @@ class StockCrawler:
         
         soup = BeautifulSoup(html, 'html.parser')
         revenue_data = []
-        revenue_table = soup.find('table', {'id': 'tblChart'})
+        revenue_table = soup.find('table', {'id': 'tblDetail'})
         if revenue_table:
-            rows = revenue_table.find_all('tr')[1:]  # Skip header
-            for row in rows:
-                cols = row.find_all('td')
-                if len(cols) >= 2:
-                    year_month = cols[0].text.strip()
-                    revenue = cols[1].text.strip().replace(',', '')
-                    if re.match(r'\d{4}/\d{2}', year_month):
-                        year, month = map(int, year_month.split('/'))
-                        revenue_data.append({
-                            'Year': year,
-                            'Month': month,
-                            'Revenue': float(revenue) if revenue else None
-                        })
+            # Get rows from row0 to row35 (36 months)
+            for i in range(36):  # 0 to 35 inclusive
+                row = revenue_table.find('tr', {'id': f'row{i}'})
+                if row:
+                    cols = row.find_all('td')
+                    if len(cols) >= 8:  # Ensure there are at least 8 <td> elements
+                        year_month = cols[0].text.strip()  # First column is year/month
+                        revenue = cols[7].text.strip().replace(',', '')  # 8th column (index 7) is revenue
+                        if re.match(r'\d{4}/\d{2}', year_month):
+                            year, month = map(int, year_month.split('/'))
+                            revenue_data.append({
+                                'Year': year,
+                                'Month': month,
+                                'Revenue': float(revenue) if revenue else None
+                            })
+                        else:
+                            print(f"Invalid year/month format in row{i}: {year_month}")
+                else:
+                    print(f"Row {i} not found for stock {self.raw_stock_code}")
+                    break  # Stop if a row is missing
         else:
-            print(f"Revenue table not found for stock {self.raw_stock_code}")
+            print(f"Revenue table 'tblDetail' not found for stock {self.raw_stock_code}")
         
-        return pd.DataFrame(revenue_data)
+        revenue_df = pd.DataFrame(revenue_data)
+        if len(revenue_df) > 36:
+            # Ensure only the latest 36 months are returned
+            revenue_df = revenue_df.tail(36)
+        return revenue_df
     
     def get_profit_ratio(self):
         """
