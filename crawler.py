@@ -148,34 +148,60 @@ class StockCrawler:
     
     def get_pe_ratio(self):
         """
-        Fetch all 'Current PER' data from ShowK_ChartFlow.asp
+        Fetch the last 180 weeks of P/E ratio data from ShowK_ChartFlow.asp
         """
         url = f"https://goodinfo.tw/tw/ShowK_ChartFlow.asp?RPT_CAT=PER&STOCK_ID={self.raw_stock_code}"
-        html = self._fetch_page(url)
-        if not html:
+        try:
+            self.driver.get(url)
+            
+            # Click the Expand year button
+            five_years_button_xpath = "//input[@value='查5年']"
+            WebDriverWait(self.driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, five_years_button_xpath))
+            )
+            self.driver.find_element(By.XPATH, five_years_button_xpath).click()
+            print(f"Clicked Expand Yzear button for stock {self.raw_stock_code}")
+            
+            # Wait for the table to update with 5 years of data
+            WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.ID, 'row180'))
+            )
+            html = self.driver.page_source
+        except Exception as e:
+            print(f"Error loading page or clicking button for {self.raw_stock_code}: {e}")
             return pd.DataFrame()
         
         soup = BeautifulSoup(html, 'html.parser')
         pe_data = []
-        pe_table = soup.find('table', {'id': 'tblFlowChart'})
+        pe_table = soup.find('table', {'id': 'tblDetail'})
         if pe_table:
-            rows = pe_table.find_all('tr')[1:]  # Skip header
-            for row in rows:
-                cols = row.find_all('td')
-                if len(cols) >= 2:
-                    year_month = cols[0].text.strip()
-                    pe_ratio = cols[1].text.strip()
-                    if re.match(r'\d{4}/\d{2}', year_month):
-                        year, month = map(int, year_month.split('/'))
-                        pe_data.append({
-                            'Year': year,
-                            'Month': month,
-                            'P/E Ratio': float(pe_ratio) if pe_ratio and pe_ratio != '-' else None
-                        })
+            for i in range(180):  # 0 to 179 inclusive
+                row = pe_table.find('tr', {'id': f'row{i}'})
+                if row:
+                    cols = row.find_all('td')
+                    if len(cols) >= 6:  # Ensure there are at least 6 <td> elements
+                        week_str = cols[0].text.strip()  # First column is week (e.g., "25W13")
+                        pe_ratio = cols[5].text.strip()  # 6th column (index 5) is P/E ratio
+                        if re.match(r'\d{2}W\d{1,2}', week_str):
+                            year, week = week_str.split('W')
+                            year = "20" + year
+                            pe_data.append({
+                                'Year': year,
+                                'Week': week,
+                                'P/E Ratio': float(pe_ratio) if pe_ratio and pe_ratio != '-' else None
+                            })
+                        else:
+                            print(f"Invalid week format in row{i}: {week_str}")
+                else:
+                    print(f"Row {i} not found for stock {self.raw_stock_code}")
+                    break
         else:
-            print(f"PE ratio table not found for stock {self.raw_stock_code}")
+            print(f"PE ratio table 'tblDetail' not found for stock {self.raw_stock_code}")
         
-        return pd.DataFrame(pe_data)
+        pe_df = pd.DataFrame(pe_data)
+        if len(pe_df) > 180:
+            pe_df = pe_df.tail(180)  # Ensure only the latest 180 weeks
+        return pe_df
     
     def get_current_stock_price(self):
         """
