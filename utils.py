@@ -18,15 +18,15 @@ def write_raw_data(ws, df):
                     max_length = len(str(cell.value))
             except:
                 pass
-        adjusted_width = (max_length + 2)
+        adjusted_width = (max_length + 1)
         ws.column_dimensions[column].width = adjusted_width
 
 def style_summary_sheet(ws):
     """
     Apply styling to the Summary sheet
     """
-    header_fill = PatternFill(start_color="4CAF50", end_color="4CAF50", fill_type="solid")
-    subheader_fill = PatternFill(start_color="81C784", end_color="81C784", fill_type="solid")
+    header_fill = PatternFill(start_color="1E3A8A", end_color="1E3A8A", fill_type="solid")
+    subheader_fill = PatternFill(start_color="BFDBFE", end_color="BFDBFE", fill_type="solid")
     border = Border(left=Side(style="thin"), right=Side(style="thin"), 
                     top=Side(style="thin"), bottom=Side(style="thin"))
     header_font = Font(bold=True, color="FFFFFF")
@@ -40,7 +40,7 @@ def style_summary_sheet(ws):
                 cell.fill = header_fill
                 cell.font = header_font
                 cell.alignment = align_center
-            elif cell.row in [6, 7, 8, 11, 12, 13, 16, 17, 18, 19]:  # Subheader or data rows
+            elif cell.row in [2, 3, 6, 7, 8, 11, 12, 13, 16, 17, 18, 19, 20, 21, 22 ,23, 24]:  # Subheader or data rows
                 if cell.column == 1:
                     cell.fill = subheader_fill
                     cell.font = subheader_font
@@ -56,5 +56,5 @@ def style_summary_sheet(ws):
                     max_length = len(str(cell.value))
             except:
                 pass
-        adjusted_width = (max_length + 2)
+        adjusted_width = (max_length + 1)
         ws.column_dimensions[column].width = adjusted_width

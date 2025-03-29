@@ -169,7 +169,7 @@ class StockCrawler:
                 EC.element_to_be_clickable((By.XPATH, five_years_button_xpath))
             )
             self.driver.find_element(By.XPATH, five_years_button_xpath).click()
-            print(f"Clicked Expand Yzear button for stock {self.raw_stock_code}")
+            print(f"Clicked Expand Year button for stock {self.raw_stock_code}")
             
             # Wait for the table to update with 5 years of data
             WebDriverWait(self.driver, 10).until(

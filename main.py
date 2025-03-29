@@ -1,8 +1,8 @@
+import os
 import sys
-import pandas as pd
 from crawler import StockCrawler
 from concurrent.futures import ThreadPoolExecutor
-import os
+from datetime import datetime
 from openpyxl import Workbook
 from utils import write_raw_data, style_summary_sheet
 
@@ -32,8 +32,9 @@ def main():
     output_dir = "output"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    
-    output_file = f"{output_dir}/{stock_code}_stock_data.xlsx"
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_file = f"{output_dir}/{stock_code}_stock_data_{timestamp}.xlsx"
     wb = Workbook()
     
     # Remove default empty sheet
@@ -64,7 +65,13 @@ def main():
     profit_min = profit_ratio["Net Profit Margin"].min()
     profit_avg = profit_ratio["Net Profit Margin"].mean()
     profit_max = profit_ratio["Net Profit Margin"].max()
-    latest_revenue = revenue["Revenue"].iloc[-1] if not revenue.empty else None
+    
+    # Calculate the sum of the latest 12 months' revenue
+    if not revenue.empty and len(revenue) >= 12:
+        latest_12_months_revenue = revenue["Revenue"].tail(12).sum()
+    else:
+        latest_12_months_revenue = None
+        print("Warning: Insufficient revenue data for the last 12 months")
     
     # Write summary data
     summary_data = [
@@ -82,17 +89,17 @@ def main():
         ["Average", profit_avg],
         ["Maximum", profit_max],
         ["", ""],  # Empty row
-        ["Price Prediction (Latest Revenue * Profit Margin / 10 / 2600 * P/E)", ""],
+        ["Price Prediction (Latest 12 Months Revenue Sum * 10 * Profit Margin / 2593 * P/E)", ""],
     ]
     
-    # Calculate 9 predicted prices
-    if latest_revenue and all([pe_min, pe_avg, pe_max, profit_min, profit_avg, profit_max]):
+    # Calculate 9 predicted prices using the new formula
+    if latest_12_months_revenue and all([pe_min, pe_avg, pe_max, profit_min, profit_avg, profit_max]):
         profit_ratios = [profit_min, profit_avg, profit_max]
         pe_ratios = [pe_min, pe_avg, pe_max]
         price_predictions = []
         for profit in profit_ratios:
             for pe in pe_ratios:
-                predicted_price = (latest_revenue * profit / 10 / 2600) * pe
+                predicted_price = (latest_12_months_revenue * 10 * (profit/100) / 2593) * pe
                 price_predictions.append(predicted_price)
         
         prediction_labels = [
