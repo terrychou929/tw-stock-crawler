@@ -12,7 +12,7 @@ import pandas as pd
 import re
 
 class StockCrawler:
-    debug = True
+    debug = False
 
     def __init__(self, stock_code):
         self.raw_stock_code = stock_code  # Raw stock code without .TW
@@ -239,6 +239,36 @@ class StockCrawler:
                 'Year': datetime.now().year,
                 'Month': datetime.now().month,
                 'Price': None
+            }])
+    
+    def get_share_number(self):
+        """
+        Fetch the latest share number
+        """
+        print(f"Start to fetch {inspect.currentframe().f_code.co_name.split('_')[1]} data")
+
+        url = f"https://goodinfo.tw/tw/EquityDistributionClassHis.asp?STOCK_ID={self.raw_stock_code}"
+        html = self._fetch_page(url)
+        if not html:
+            return pd.DataFrame([{'Year': datetime.now().year, 'Month': datetime.now().month, 'Share': None}])
+        
+        try:                
+            soup = BeautifulSoup(html, 'html.parser')
+            row = soup.find('tr', {'id': 'row0'})
+            cols = row.find_all('td')
+            share = cols[5].text.strip().replace(',', '')
+            current_date = datetime.now()
+            return pd.DataFrame([{
+                'Year': current_date.year,
+                'Month': current_date.month,
+                'Share': float(share) if share else None
+            }])
+        except Exception as e:
+            print(f"Error finding Share element for {self.raw_stock_code}: {e}")
+            return pd.DataFrame([{
+                'Year': datetime.now().year,
+                'Month': datetime.now().month,
+                'Share': None
             }])
     
     def __del__(self):

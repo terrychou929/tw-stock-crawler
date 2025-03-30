@@ -36,11 +36,11 @@ def style_summary_sheet(ws):
     for row in ws.rows:
         for cell in row:
             cell.border = border
-            if cell.row == 1 or cell.row in [5, 10, 15]:  # Header rows
+            if cell.row == 1 or cell.row in [6, 11, 16]:  # Header rows
                 cell.fill = header_fill
                 cell.font = header_font
                 cell.alignment = align_center
-            elif cell.row in [2, 3, 6, 7, 8, 11, 12, 13, 16, 17, 18, 19, 20, 21, 22 ,23, 24]:  # Subheader or data rows
+            elif cell.row in [2, 3, 4, 7, 8, 9, 12, 13, 14, 17, 18, 19, 20, 21, 22 ,23, 24, 25]:  # Subheader or data rows
                 if cell.column == 1:
                     cell.fill = subheader_fill
                     cell.font = subheader_font
