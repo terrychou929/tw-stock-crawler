@@ -12,7 +12,7 @@ import pandas as pd
 import re
 
 class StockCrawler:
-    debug = False
+    debug = True
 
     def __init__(self, stock_code):
         self.raw_stock_code = stock_code  # Raw stock code without .TW
@@ -159,10 +159,11 @@ class StockCrawler:
         print(f"Start to fetch {inspect.currentframe().f_code.co_name.split('_')[1]} data")        
 
         url = f"https://goodinfo.tw/tw/ShowK_ChartFlow.asp?RPT_CAT=PER&STOCK_ID={self.raw_stock_code}"
+        html = self._fetch_page(url)
+        if not html:
+            return pd.DataFrame()
         
         try:
-            self.driver.get(url)
-            
             # Click the Expand year button
             five_years_button_xpath = "//input[@value='查5年']"
             WebDriverWait(self.driver, 10).until(
@@ -254,7 +255,7 @@ class StockCrawler:
         
         try:                
             soup = BeautifulSoup(html, 'html.parser')
-            row = soup.find('tr', {'id': 'row0'})
+            row = soup.find('tr', {'id': 'row1'})
             cols = row.find_all('td')
             share = cols[5].text.strip().replace(',', '')
             current_date = datetime.now()
