@@ -96,7 +96,7 @@ def main():
         ["Average", profit_avg],
         ["Maximum", profit_max],
         ["", ""],  # Empty row
-        ["Price Prediction (Latest 12 Months Revenue Sum * 10 * Profit Margin / 2593 * P/E)", ""],
+        ["Price Prediction (Latest 12 Months Revenue Sum * 10 * Profit Margin / " + str(share) + " * P/E)", ""],
     ]
     
     # Calculate 9 predicted prices using the new formula
