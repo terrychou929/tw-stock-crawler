@@ -121,7 +121,7 @@ class StockCrawler:
                     cols = row.find_all('td')
                     if len(cols) >= 16:  # Ensure there are at least 16 <td> elements
                         year = cols[0].text.strip()  # First column is year
-                        net_profit_margin = cols[15].text.strip().replace('%', '')  # 16th column (index 15) is net profit margin
+                        net_profit_margin = cols[15].text.strip().replace('%', '')  # 16th column (index 15) is net profit margin 稅後淨利
                         if re.match(r'\d{4}', year):
                             # Skip if net profit margin is empty or invalid
                             if not net_profit_margin or net_profit_margin == '-' or net_profit_margin == '':

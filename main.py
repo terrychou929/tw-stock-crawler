@@ -96,7 +96,7 @@ def main():
         ["Average", profit_avg],
         ["Maximum", profit_max],
         ["", ""],  # Empty row
-        ["Price Prediction (Latest 12 Months Revenue Sum * 10 * Profit Margin / " + str(share) + " * P/E)", ""],
+        ["Price Prediction (Latest 12 Months Revenue Sum * Profit Margin / " + str(share) + "/10 * P/E)", ""],
     ]
     
     # Calculate 9 predicted prices using the new formula
@@ -106,7 +106,8 @@ def main():
         price_predictions = []
         for profit in profit_ratios:
             for pe in pe_ratios:
-                predicted_price = (latest_12_months_revenue * 10 * (profit/100) / share) * pe
+                # 除以10的部分是股本要換算回股數要除以10的票面價值
+                predicted_price = (latest_12_months_revenue * 10 * (profit/100) / (share/10)) * pe
                 price_predictions.append(predicted_price)
         
         prediction_labels = [
